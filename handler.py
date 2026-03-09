@@ -6,6 +6,7 @@ import json
 import uuid
 import logging
 import urllib.request
+import urllib.error
 import urllib.parse
 import binascii
 import subprocess
@@ -113,7 +114,19 @@ def queue_prompt(prompt):
     p = {"prompt": prompt, "client_id": client_id}
     data = json.dumps(p).encode('utf-8')
     req = urllib.request.Request(url, data=data)
-    return json.loads(urllib.request.urlopen(req).read())
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        logger.error(f"ComfyUI prompt rejected: HTTP {e.code} - {e.reason}")
+        logger.error(f"ComfyUI response body: {body}")
+        try:
+            err_json = json.loads(body)
+            logger.error(f"ComfyUI error (parsed): {json.dumps(err_json, indent=2)}")
+        except Exception:
+            pass
+        raise
 
 
 def get_history(prompt_id):
@@ -164,8 +177,15 @@ def get_videos(ws, prompt):
 
 
 def load_workflow(workflow_path):
+    abs_path = os.path.abspath(workflow_path)
+    logger.info(f"Loading workflow from: {abs_path} (exists: {os.path.exists(abs_path)})")
     with open(workflow_path, 'r') as file:
-        return json.load(file)
+        data = json.load(file)
+    # Log ResizeImageMaskNode inputs to debug longer_size / size mismatch
+    for nid, node in data.items():
+        if isinstance(node, dict) and node.get("class_type") == "ResizeImageMaskNode":
+            logger.info(f"Workflow node {nid} (ResizeImageMaskNode) inputs: {json.dumps(node.get('inputs', {}), indent=2)}")
+    return data
 
 
 def handler(job):
@@ -279,6 +299,15 @@ def handler(job):
     if with_audio and not has_audio_input and "3980" in prompt:
         prompt["3980"]["inputs"]["frames_number"] = num_frames
         prompt["3980"]["inputs"]["frame_rate"] = int(fps)
+
+    # --- Debug: log workflow source and ResizeImageMaskNode state before queueing ---
+    logger.info(f"About to queue prompt from workflow: {workflow_file}")
+    for nid, node in prompt.items():
+        if isinstance(node, dict) and node.get("class_type") == "ResizeImageMaskNode":
+            inputs = node.get("inputs", {})
+            logger.info(f"Prompt node {nid} (ResizeImageMaskNode) inputs before queue: {json.dumps(inputs, indent=2)}")
+            if "longer_size" not in inputs:
+                logger.warning(f"Prompt node {nid} missing 'longer_size' in inputs (ComfyUI will reject with 400)")
 
     # --- Connect to ComfyUI ---
     ws_url = f"ws://{server_address}:8188/ws?clientId={client_id}"
