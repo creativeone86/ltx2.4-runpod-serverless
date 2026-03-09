@@ -28,9 +28,9 @@
   "4982": {
     "class_type": "LTXAVTextEncoderLoader",
     "inputs": {
-      "clip_name": "comfy_gemma_3_12B_it.safetensors",
-      "ltxv_name": "ltx-2.3-22b-dev.safetensors",
-      "dtype": "default"
+      "text_encoder": "comfy_gemma_3_12B_it.safetensors",
+      "ckpt_name": "ltx-2.3-22b-dev.safetensors",
+      "device": "default"
     }
   },
   "2483": {
@@ -67,14 +67,15 @@
       "input": ["2004", 0],
       "mode": "scale longer dimension",
       "size": 1536,
-      "interpolation": "lanczos"
+      "scale_method": "lanczos"
     }
   },
   "3336": {
     "class_type": "LTXVPreprocess",
     "inputs": {
       "image": ["4990", 0],
-      "num_latent_frames": 18
+      "num_latent_frames": 18,
+      "img_compression": 100
     }
   },
   "3059": {
@@ -258,8 +259,8 @@
     "inputs": {
       "video": ["4849", 0],
       "filename_prefix": "output",
-      "video_codec": "auto",
-      "audio_codec": "auto"
+      "codec": "auto",
+      "format": "auto"
     }
   }
 }
