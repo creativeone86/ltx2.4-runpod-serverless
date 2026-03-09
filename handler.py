@@ -90,6 +90,23 @@ def copy_to_comfyui_input(source_path, target_filename):
     return target_filename
 
 
+def get_audio_duration(audio_path):
+    """Get audio duration in seconds using ffprobe."""
+    try:
+        result = subprocess.run(
+            ['ffprobe', '-v', 'quiet', '-show_entries', 'format=duration',
+             '-of', 'default=noprint_wrappers=1:nokey=1', audio_path],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            duration = float(result.stdout.strip())
+            logger.info(f"Audio duration: {duration:.2f}s")
+            return duration
+    except Exception as e:
+        logger.warning(f"Failed to get audio duration: {e}")
+    return None
+
+
 def queue_prompt(prompt):
     url = f"http://{server_address}:8188/prompt"
     logger.info(f"Queueing prompt to: {url}")
@@ -206,8 +223,17 @@ def handler(job):
     negative_prompt = job_input.get("negative_prompt", DEFAULT_NEGATIVE_PROMPT)
     width = to_nearest_multiple_of_32(job_input.get("width", 960))
     height = to_nearest_multiple_of_32(job_input.get("height", 544))
-    num_frames = job_input.get("num_frames", 121)
     fps = float(job_input.get("fps", 24))
+
+    if has_audio_input and "num_frames" not in job_input:
+        audio_duration = get_audio_duration(audio_path)
+        if audio_duration:
+            num_frames = int(audio_duration * fps) + 1
+            logger.info(f"Auto-calculated num_frames={num_frames} from audio ({audio_duration:.2f}s at {fps} fps)")
+        else:
+            num_frames = 121
+    else:
+        num_frames = job_input.get("num_frames", 121)
     seed = job_input.get("seed", random.randint(0, 2**32 - 1))
     distilled_lora_strength = float(job_input.get("distilled_lora_strength", 0.5))
 

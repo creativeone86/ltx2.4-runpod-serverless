@@ -2,7 +2,7 @@
   "4010": {
     "class_type": "LTXVAudioVAELoader",
     "inputs": {
-      "model": "ltx-2.3-22b-dev.safetensors"
+      "ckpt_name": "ltx-2.3-22b-dev.safetensors"
     }
   },
   "3940": {
@@ -66,7 +66,7 @@
     "inputs": {
       "input": ["2004", 0],
       "resize_type": "scale longer dimension",
-      "size": 1536,
+      "longer_size": 1536,
       "scale_method": "lanczos"
     }
   },
@@ -74,7 +74,6 @@
     "class_type": "LTXVPreprocess",
     "inputs": {
       "image": ["4990", 0],
-      "num_latent_frames": 18,
       "img_compression": 100
     }
   },

@@ -60,7 +60,7 @@
     "inputs": {
       "input": ["2004", 0],
       "resize_type": "scale longer dimension",
-      "size": 1536,
+      "longer_size": 1536,
       "scale_method": "lanczos"
     }
   },
@@ -68,7 +68,6 @@
     "class_type": "LTXVPreprocess",
     "inputs": {
       "image": ["4990", 0],
-      "num_latent_frames": 18,
       "img_compression": 100
     }
   },
