@@ -149,27 +149,55 @@ def get_videos(ws, prompt):
 
     history = get_history(prompt_id)[prompt_id]
     output_videos = {}
-    for node_id in history['outputs']:
-        node_output = history['outputs'][node_id]
+
+    # Log actual structure so we can fix extraction if SaveVideo uses different keys
+    outputs = history.get('outputs', {})
+    logger.info(f"History outputs node IDs: {list(outputs.keys())}")
+    for nid, out in outputs.items():
+        logger.info(f"  Node {nid} output keys: {list(out.keys()) if isinstance(out, dict) else type(out).__name__}")
+
+    for node_id in outputs:
+        node_output = outputs[node_id]
         videos_output = []
-        for key in ('videos', 'gifs'):
-            if key in node_output:
-                for video in node_output[key]:
-                    fullpath = video.get('fullpath')
-                    if fullpath and os.path.exists(fullpath):
-                        with open(fullpath, 'rb') as f:
+        # Support both list keys ('videos', 'gifs') and singular 'video'
+        for key in ('videos', 'gifs', 'video'):
+            if key not in node_output:
+                continue
+            items = node_output[key]
+            if isinstance(items, dict):
+                items = [items]
+            elif not isinstance(items, list):
+                continue
+            for video in items:
+                if not isinstance(video, dict):
+                    continue
+                fullpath = video.get('fullpath')
+                if fullpath and os.path.exists(fullpath):
+                    with open(fullpath, 'rb') as f:
+                        video_data = base64.b64encode(f.read()).decode('utf-8')
+                    videos_output.append(video_data)
+                    logger.info(f"Read video from fullpath: {fullpath}")
+                    continue
+                filename = video.get('filename', '')
+                subfolder = video.get('subfolder', '')
+                output_dir = os.path.join('/ComfyUI/output', subfolder) if subfolder else '/ComfyUI/output'
+                filepath = os.path.join(output_dir, filename)
+                if os.path.exists(filepath):
+                    with open(filepath, 'rb') as f:
+                        video_data = base64.b64encode(f.read()).decode('utf-8')
+                    videos_output.append(video_data)
+                    logger.info(f"Read video from: {filepath}")
+                    continue
+                # Try filename only in /ComfyUI/output (no subfolder)
+                if filename:
+                    alt = os.path.join('/ComfyUI/output', filename)
+                    if os.path.exists(alt):
+                        with open(alt, 'rb') as f:
                             video_data = base64.b64encode(f.read()).decode('utf-8')
                         videos_output.append(video_data)
-                    else:
-                        filename = video.get('filename', '')
-                        subfolder = video.get('subfolder', '')
-                        folder_type = video.get('type', 'output')
-                        output_dir = os.path.join('/ComfyUI/output', subfolder)
-                        filepath = os.path.join(output_dir, filename)
-                        if os.path.exists(filepath):
-                            with open(filepath, 'rb') as f:
-                                video_data = base64.b64encode(f.read()).decode('utf-8')
-                            videos_output.append(video_data)
+                        logger.info(f"Read video from alt path: {alt}")
+                        continue
+                logger.warning(f"Video entry not found on disk: fullpath={fullpath!r}, filepath={filepath!r}")
         if videos_output:
             output_videos[node_id] = videos_output
 
