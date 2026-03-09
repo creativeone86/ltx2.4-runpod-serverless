@@ -1,0 +1,15 @@
+{
+  "title": "LTX 2.3 22B Video Generation",
+  "description": "LTX 2.3 22B video generation with two-pass pipeline, optional synchronized audio, audio-to-video, text-to-video and image-to-video modes. Uses distilled LoRA for fast inference with CFG=1. Models loaded from network volume.",
+  "type": "serverless",
+  "category": "video",
+  "config": {
+    "runsOn": "GPU",
+    "containerDiskInGb": 30,
+    "gpuCount": 1,
+    "gpuIds": "AMPERE_48,ADA_48_PRO",
+    "allowedCudaVersions": [
+      "12.4"
+    ]
+  }
+}

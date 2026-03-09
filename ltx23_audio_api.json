@@ -1,0 +1,261 @@
+{
+  "4010": {
+    "class_type": "LTXVAudioVAELoader",
+    "inputs": {
+      "model": "ltx-2.3-22b-dev.safetensors"
+    }
+  },
+  "3940": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "ltx-2.3-22b-dev.safetensors"
+    }
+  },
+  "4922": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": ["3940", 0],
+      "lora_name": "ltxv/ltx2/ltx-2.3-22b-distilled-lora-384.safetensors",
+      "strength_model": 0.5
+    }
+  },
+  "4974": {
+    "class_type": "LatentUpscaleModelLoader",
+    "inputs": {
+      "model_name": "ltx-2.3-spatial-upscaler-x2-1.0.safetensors"
+    }
+  },
+  "4982": {
+    "class_type": "LTXAVTextEncoderLoader",
+    "inputs": {
+      "clip_name": "comfy_gemma_3_12B_it.safetensors",
+      "ltxv_name": "ltx-2.3-22b-dev.safetensors",
+      "dtype": "default"
+    }
+  },
+  "2483": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["4982", 0],
+      "text": "A cinematic video"
+    }
+  },
+  "2612": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["4982", 0],
+      "text": "pc game, console game, video game, cartoon, childish, ugly"
+    }
+  },
+  "1241": {
+    "class_type": "LTXVConditioning",
+    "inputs": {
+      "positive": ["2483", 0],
+      "negative": ["2612", 0],
+      "frame_rate": 24
+    }
+  },
+  "2004": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "example.png"
+    }
+  },
+  "4990": {
+    "class_type": "ResizeImageMaskNode",
+    "inputs": {
+      "input": ["2004", 0],
+      "mode": "scale longer dimension",
+      "size": 1536,
+      "interpolation": "lanczos"
+    }
+  },
+  "3336": {
+    "class_type": "LTXVPreprocess",
+    "inputs": {
+      "image": ["4990", 0],
+      "num_latent_frames": 18
+    }
+  },
+  "3059": {
+    "class_type": "EmptyLTXVLatentVideo",
+    "inputs": {
+      "width": 960,
+      "height": 544,
+      "length": 121,
+      "batch_size": 1
+    }
+  },
+  "3159": {
+    "class_type": "LTXVImgToVideoConditionOnly",
+    "inputs": {
+      "vae": ["3940", 2],
+      "image": ["3336", 0],
+      "latent": ["3059", 0],
+      "strength": 0.7,
+      "bypass": true
+    }
+  },
+  "3980": {
+    "class_type": "LTXVEmptyLatentAudio",
+    "inputs": {
+      "audio_vae": ["4010", 0],
+      "frames_number": 121,
+      "frame_rate": 24,
+      "batch_size": 1
+    }
+  },
+  "4528": {
+    "class_type": "LTXVConcatAVLatent",
+    "inputs": {
+      "video_latent": ["3159", 0],
+      "audio_latent": ["3980", 0]
+    }
+  },
+  "4832": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 43
+    }
+  },
+  "4828": {
+    "class_type": "CFGGuider",
+    "inputs": {
+      "model": ["4922", 0],
+      "positive": ["1241", 0],
+      "negative": ["1241", 1],
+      "cfg": 1
+    }
+  },
+  "4831": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler_ancestral_cfg_pp"
+    }
+  },
+  "4984": {
+    "class_type": "ManualSigmas",
+    "inputs": {
+      "sigmas": "1.0, 0.99375, 0.9875, 0.98125, 0.975, 0.909375, 0.725, 0.421875, 0.0"
+    }
+  },
+  "4829": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": ["4832", 0],
+      "guider": ["4828", 0],
+      "sampler": ["4831", 0],
+      "sigmas": ["4984", 0],
+      "latent_image": ["4528", 0]
+    }
+  },
+  "4845": {
+    "class_type": "LTXVSeparateAVLatent",
+    "inputs": {
+      "av_latent": ["4829", 0]
+    }
+  },
+  "4975": {
+    "class_type": "LTXVLatentUpsampler",
+    "inputs": {
+      "samples": ["4845", 0],
+      "upscale_model": ["4974", 0],
+      "vae": ["3940", 2]
+    }
+  },
+  "4970": {
+    "class_type": "LTXVImgToVideoConditionOnly",
+    "inputs": {
+      "vae": ["3940", 2],
+      "image": ["4990", 0],
+      "latent": ["4975", 0],
+      "strength": 1,
+      "bypass": true
+    }
+  },
+  "4969": {
+    "class_type": "LTXVConcatAVLatent",
+    "inputs": {
+      "video_latent": ["4970", 0],
+      "audio_latent": ["4845", 1]
+    }
+  },
+  "4967": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 42
+    }
+  },
+  "4964": {
+    "class_type": "CFGGuider",
+    "inputs": {
+      "model": ["4922", 0],
+      "positive": ["1241", 0],
+      "negative": ["1241", 1],
+      "cfg": 1
+    }
+  },
+  "4976": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler_cfg_pp"
+    }
+  },
+  "4985": {
+    "class_type": "ManualSigmas",
+    "inputs": {
+      "sigmas": "0.85, 0.7250, 0.4219, 0.0"
+    }
+  },
+  "4971": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": ["4967", 0],
+      "guider": ["4964", 0],
+      "sampler": ["4976", 0],
+      "sigmas": ["4985", 0],
+      "latent_image": ["4969", 0]
+    }
+  },
+  "4973": {
+    "class_type": "LTXVSeparateAVLatent",
+    "inputs": {
+      "av_latent": ["4971", 0]
+    }
+  },
+  "4851": {
+    "class_type": "VAEDecodeTiled",
+    "inputs": {
+      "samples": ["4973", 0],
+      "vae": ["3940", 2],
+      "tile_size": 512,
+      "overlap": 64,
+      "temporal_size": 512,
+      "temporal_overlap": 4
+    }
+  },
+  "4848": {
+    "class_type": "LTXVAudioVAEDecode",
+    "inputs": {
+      "samples": ["4973", 1],
+      "audio_vae": ["4010", 0]
+    }
+  },
+  "4849": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": ["4851", 0],
+      "audio": ["4848", 0],
+      "fps": 24
+    }
+  },
+  "4852": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": ["4849", 0],
+      "filename_prefix": "output",
+      "video_codec": "auto",
+      "audio_codec": "auto"
+    }
+  }
+}
