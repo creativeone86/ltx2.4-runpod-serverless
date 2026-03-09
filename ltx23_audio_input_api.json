@@ -65,7 +65,7 @@
     "class_type": "ResizeImageMaskNode",
     "inputs": {
       "input": ["2004", 0],
-      "mode": "scale longer dimension",
+      "resize_type": "scale longer dimension",
       "size": 1536,
       "scale_method": "lanczos"
     }
